@@ -11,7 +11,7 @@ from .logger import loggers
 from .cache import cache
 from . import secret
 
-PASSWORD_CHANGE_THRESHOLD = 90
+PASSWORD_CHANGE_THRESHOLD = 60
 
 
 class UserAction(GeneralDatabaseAction):
