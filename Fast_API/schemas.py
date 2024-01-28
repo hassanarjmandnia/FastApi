@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, validator, EmailStr
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status
 from typing import Optional
 
 
@@ -61,3 +61,7 @@ class UserTableUpdate(BaseModel):
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Are you sure you want to update anything? At least one field (first name or last name or email) should be provided.",
             )
+
+
+class NoteTableAdd(BaseModel):
+    data: str = Field(..., min_length=7)
