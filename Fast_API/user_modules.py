@@ -1,7 +1,7 @@
 from .schemas import UserTableCreate, UserTableLogin, UserTableChangePassword
+from .auth import AuthManager, PasswordHashing, oauth_2_schemes
 from .database import DatabaseManager, GeneralDatabaseAction
 from fastapi import HTTPException, Depends, status
-from .auth import AuthManager, PasswordHashing
 from .validators import validate_unique_email
 from sqlalchemy.orm import Session
 from .models import User, Role
@@ -11,6 +11,7 @@ from .logger import loggers
 from .cache import cache
 from . import secret
 
+
 PASSWORD_CHANGE_THRESHOLD = 60
 
 
@@ -19,6 +20,8 @@ class UserAction(GeneralDatabaseAction):
         super().__init__(db)
         self.auth_manager = auth_manager
         self.password_manager = password_manager
+        print(self.db)
+        print("user action init")
 
     def add_user(self, user: UserTableCreate):
         new_user = User(
@@ -68,7 +71,6 @@ class UserAction(GeneralDatabaseAction):
 
     def last_password_change_check(self, user):
         days_since_last_change = (datetime.now() - user.last_password_change).days
-        print(days_since_last_change)
         if days_since_last_change > PASSWORD_CHANGE_THRESHOLD:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -114,10 +116,17 @@ class UserAction(GeneralDatabaseAction):
         loggers["info"].info(f"User {authenticated_user.email} changed their password")
         return {"message": "Password successfully changed"}
 
+    def get_user_info(self, email):
+        print(email)
+        user = self.db.query(User).filter(User.email == email).first()
+        return user
+
 
 class UserManager:
     def __init__(self, db: Session = Depends(DatabaseManager().get_session)):
         self.db = db
+        print(self.db)
+        print("user manager init")
         self.auth_manager = AuthManager()
         self.password_manager = PasswordHashing()
         self.worker = UserAction(self.db, self.auth_manager, self.password_manager)
@@ -149,3 +158,12 @@ class UserManager:
 
     async def change_password(self, user: UserTableChangePassword):
         return await self.worker.update_password(user)
+
+    async def find_user_info(
+        self,
+        token: str = Depends(oauth_2_schemes),
+    ):
+        print("here")
+        payload = await self.auth_manager.decode_access_token(token)
+        user = self.worker.get_user_info(payload.get("sub"))
+        return user
