@@ -1,10 +1,10 @@
 from .schemas import UserTableCreate, UserTableLogin, UserTableChangePassword
 from .auth import AuthManager, PasswordHashing, oauth_2_schemes
-from .database import DatabaseManager, GeneralDatabaseAction
+from .Database.database import DatabaseManager, GeneralDatabaseAction
 from fastapi import HTTPException, Depends, status
 from .validators import validate_unique_email
 from sqlalchemy.orm import Session
-from .models import User, Role
+from .Database.models import User, Role
 from jose import JWTError, jwt
 from datetime import datetime
 from .logger import loggers

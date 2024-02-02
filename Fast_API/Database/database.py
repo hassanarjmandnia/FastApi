@@ -1,8 +1,9 @@
 from sqlalchemy.orm import sessionmaker, scoped_session
+from Fast_API.settings import Settings
 from sqlalchemy import create_engine
+from Fast_API.logger import loggers
 from sqlalchemy.orm import Session
-from .settings import Settings
-from .logger import loggers
+
 
 setting = Settings()
 
@@ -45,9 +46,12 @@ class DatabaseManager:
 loggers["info"].info("Database setup completed.")
 
 
+
+
 class GeneralDatabaseAction:
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self):
+        db_manager = DatabaseManager()
+        self.db = db_manager.get_session()
 
     def add_item(self, item):
         self.db.add(item)

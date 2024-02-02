@@ -1,7 +1,7 @@
 from .settings import Settings
-from .database import engine
+from .Database.database import engine
 from fastapi import FastAPI
-from .models import Base
+from .Database.models import Base
 from .api import router
 from .logger import loggers
 

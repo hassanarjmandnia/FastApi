@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
-from .models import User
+from .Database.models import User
 
 
 def validate_unique_email(email: str, db: Session):

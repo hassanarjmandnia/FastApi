@@ -4,7 +4,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from .logger import loggers
-from .models import User
+from .Database.models import User
 from .cache import cache
 from . import secret
 import secrets
