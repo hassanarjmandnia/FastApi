@@ -2,7 +2,7 @@ from .schemas import NoteTableAdd
 from .auth import oauth_2_schemes, AuthManager
 from fastapi import APIRouter, Depends
 from .logger import loggers
-from .user import UserManager
+from .User.user_route import UserManager
 
 note_router = APIRouter()
 
@@ -18,10 +18,8 @@ def show_note(note_id: int):
 
 
 @note_router.post("/add_note")
-async def add_note(
-    current_user: dict = Depends(UserManager().find_user_info),
-):
-    return {"message": "Note added successfully", "user_info": current_user}
+async def add_note():
+    return {"message": "Note added successfully"}
 
 
 @note_router.post("/addd_note")

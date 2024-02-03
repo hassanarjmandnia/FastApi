@@ -4,7 +4,6 @@ from sqlalchemy import create_engine
 from Fast_API.logger import loggers
 from sqlalchemy.orm import Session
 
-
 setting = Settings()
 
 
@@ -28,7 +27,7 @@ class DatabaseManager:
         if not cls._instance:
             cls._instance = super(DatabaseManager, cls).__new__(cls)
             cls._instance.engine = engine
-            cls._instance.session_maker = scoped_session(
+            cls._instance.session_maker = (
                 sessionmaker(
                     autocommit=False, autoflush=False, bind=cls._instance.engine
                 )
@@ -40,20 +39,19 @@ class DatabaseManager:
         try:
             yield session
         finally:
+            
             session.close()
 
 
 loggers["info"].info("Database setup completed.")
 
 
-
-
 class GeneralDatabaseAction:
-    def __init__(self):
-        db_manager = DatabaseManager()
-        self.db = db_manager.get_session()
+    def __init__(self, db):
+        self.db = db
 
     def add_item(self, item):
+        print(self.db)
         self.db.add(item)
 
     def commit_changes(self):

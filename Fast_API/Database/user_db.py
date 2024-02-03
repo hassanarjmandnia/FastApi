@@ -3,9 +3,9 @@ from .models import User
 
 
 class UserDatabaseAction(GeneralDatabaseAction):
-    def __init__(self):
-        # super().__init__()
-        pass
+
+    def __init__(self, db):
+        super().__init__(db)
 
     def get_user_by_id(self, user_id):
         return self.db.query(User).get(user_id)
@@ -18,5 +18,3 @@ class UserDatabaseAction(GeneralDatabaseAction):
         self.commit_changes()
         self.refresh_item(user)
         return user
-
-
