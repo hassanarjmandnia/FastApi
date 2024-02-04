@@ -13,9 +13,11 @@ user_router = APIRouter()
 @user_router.post("/register")
 async def register_user(
     user: UserTableCreate,
+    db_session: Session = Depends(DatabaseManager().get_session),
     user_manager: UserManager = Depends(UserManager),
 ):
-    return await user_manager.register_user(user)
+    print(user_manager)
+    return await user_manager.register_user(user, db_session)
 
 
 @user_router.post("/login")

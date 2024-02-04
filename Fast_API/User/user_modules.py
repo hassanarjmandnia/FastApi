@@ -18,24 +18,24 @@ PASSWORD_CHANGE_THRESHOLD = 60
 
 
 class UserAction:
-    def __init__(self, auth_manager, password_manager, db_session):
+    def __init__(self, auth_manager, password_manager):
         self.auth_manager = auth_manager
         self.password_manager = password_manager
-        self.user_database_action = UserDatabaseAction(db_session)
-        self.role_database_action = RoleDatabaseAction(db_session)
 
-    def add_new_user(self, user: UserTableCreate):
+    def add_new_user(self, user: UserTableCreate, db_session):
+        self.user_database_action = UserDatabaseAction(db_session)
         validate_unique_email(user.email, self.user_database_action)
         new_user = User(
             **user.model_dump(exclude={"password", "password_confirmation"}),
             password=self.password_manager.get_password_hash(user.password),
         )
-        self.set_default_role(new_user)
+        self.set_default_role(new_user, db_session)
         self.user_database_action.add_user(new_user)
         loggers["info"].info(f"New user {new_user.email} add to databse")
         return new_user
 
-    def set_default_role(self, user: User):
+    def set_default_role(self, user: User, db_session):
+        self.role_database_action = RoleDatabaseAction(db_session)
         if not user.role:
             default_role = self.role_database_action.get_role_by_name("user")
             if not default_role:
@@ -45,19 +45,21 @@ class UserAction:
 
 
 class UserManager:
-    def __init__(
-        self,
-        db_session: Session = Depends(DatabaseManager().get_session),
-    ):
-        self.db_session = db_session
-        self.auth_manager = AuthManager()
-        self.password_manager = PasswordHashing()
-        self.worker = UserAction(
-            self.auth_manager, self.password_manager, self.db_session
-        )
+    _instance = None
 
-    async def register_user(self, user: UserTableCreate):
-        user = self.worker.add_new_user(user)
+    def __new__(cls):
+        if not cls._instance:
+            cls._instance = super().__new__(cls)
+            cls._instance.auth_manager = AuthManager()
+            cls._instance.password_manager = PasswordHashing()
+            cls._instance.worker = UserAction(
+                cls._instance.auth_manager, cls._instance.password_manager
+            )
+
+        return cls._instance
+
+    async def register_user(self, user: UserTableCreate, db_session: Session):
+        user = self.worker.add_new_user(user, db_session)
         return await self.auth_manager.create_tokens_for_user(user)
 
 
