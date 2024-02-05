@@ -3,10 +3,10 @@ from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from .logger import loggers
-from .Database.models import User
-from .cache import cache
-from . import secret
+from Fast_API.logger import loggers
+from Fast_API.Database.models import User
+from Fast_API.cache import cache
+from Fast_API import secret
 import secrets
 
 oauth_2_schemes = OAuth2PasswordBearer(tokenUrl="token")

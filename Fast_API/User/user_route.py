@@ -1,6 +1,6 @@
-from Fast_API.Database.database import DatabaseManager
 from .user_schemas import UserTableCreate, UserTableLogin, UserTableChangePassword
-from Fast_API.auth import oauth_2_schemes, AuthManager
+from Fast_API.Database.database import DatabaseManager
+from Fast_API.Auth.auth import oauth_2_schemes, AuthManager
 from fastapi import APIRouter, Depends
 from .user_modules import UserManager
 from Fast_API.logger import loggers
@@ -16,16 +16,16 @@ async def register_user(
     db_session: Session = Depends(DatabaseManager().get_session),
     user_manager: UserManager = Depends(UserManager),
 ):
-    print(user_manager)
     return await user_manager.register_user(user, db_session)
 
 
 @user_router.post("/login")
 async def login_user(
     user: UserTableLogin,
+    db_session: Session = Depends(DatabaseManager().get_session),
     user_manager: UserManager = Depends(UserManager),
 ):
-    return await user_manager.login_user(user)
+    return await user_manager.login_user(user, db_session)
 
 
 @user_router.get("/logout")

@@ -1,5 +1,5 @@
 from .schemas import NoteTableAdd
-from .auth import oauth_2_schemes, AuthManager
+from .Auth.auth import oauth_2_schemes, AuthManager
 from fastapi import APIRouter, Depends
 from .logger import loggers
 from .User.user_route import UserManager

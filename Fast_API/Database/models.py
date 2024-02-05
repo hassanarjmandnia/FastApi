@@ -43,8 +43,8 @@ class User(Base):
     last_name = Column(String(150))
     email = Column(String(150), unique=True)
     password = Column(String(150))
-    is_active = Column(Boolean, default=False)
-    last_password_change = Column(DateTime, default=datetime.now())
+    is_active = Column(Boolean, default=True)
+    last_password_change = Column(DateTime, default=datetime.now)
     role_id = Column(Integer, ForeignKey("role.id"), nullable=False)
     notes = relationship(
         "Note", backref="user", lazy=True, cascade="all, delete-orphan"

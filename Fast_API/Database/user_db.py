@@ -4,17 +4,19 @@ from .models import User
 
 class UserDatabaseAction(GeneralDatabaseAction):
 
-    def __init__(self, db):
-        super().__init__(db)
+    def __init__(
+        self,
+    ):
+        super().__init__()
 
-    def get_user_by_id(self, user_id):
-        return self.db.query(User).get(user_id)
+    def get_user_by_id(self, user_id, db_session):
+        return db_session.query(User).get(user_id)
 
-    def get_user_by_email(self, email):
-        return self.db.query(User).filter(User.email == email).first()
+    def get_user_by_email(self, email, db_session):
+        return db_session.query(User).filter(User.email == email).first()
 
-    def add_user(self, user):
-        self.add_item(user)
-        self.commit_changes()
-        self.refresh_item(user)
+    def add_user(self, user, db_session):
+        self.add_item(user, db_session)
+        self.commit_changes(db_session)
+        self.refresh_item(user, db_session)
         return user

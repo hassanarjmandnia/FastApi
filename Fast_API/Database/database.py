@@ -27,10 +27,8 @@ class DatabaseManager:
         if not cls._instance:
             cls._instance = super(DatabaseManager, cls).__new__(cls)
             cls._instance.engine = engine
-            cls._instance.session_maker = (
-                sessionmaker(
-                    autocommit=False, autoflush=False, bind=cls._instance.engine
-                )
+            cls._instance.session_maker = sessionmaker(
+                autocommit=False, autoflush=False, bind=cls._instance.engine
             )
         return cls._instance
 
@@ -39,7 +37,7 @@ class DatabaseManager:
         try:
             yield session
         finally:
-            
+
             session.close()
 
 
@@ -47,15 +45,13 @@ loggers["info"].info("Database setup completed.")
 
 
 class GeneralDatabaseAction:
-    def __init__(self, db):
-        self.db = db
 
-    def add_item(self, item):
-        print(self.db)
-        self.db.add(item)
+    def add_item(self, item, db_session):
+        print(db_session)
+        db_session.add(item)
 
-    def commit_changes(self):
-        self.db.commit()
+    def commit_changes(self, db_session):
+        db_session.commit()
 
-    def refresh_item(self, item):
-        self.db.refresh(item)
+    def refresh_item(self, item, db_session):
+        db_session.refresh(item)
