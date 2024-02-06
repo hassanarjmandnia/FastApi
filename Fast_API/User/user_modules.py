@@ -1,6 +1,6 @@
 from .user_schemas import UserTableCreate, UserTableLogin, UserTableChangePassword
 from Fast_API.Auth.auth import AuthManager, PasswordHashing, oauth_2_schemes
-from fastapi import HTTPException, status
+from fastapi import Depends, HTTPException, status
 from Fast_API.validators import validate_unique_email
 from sqlalchemy.orm import Session
 from Fast_API.Database.models import User, Role
@@ -77,6 +77,37 @@ class UserAction:
             )
         return True
 
+    async def invalid_token(self, token: str):
+        payload = await self.auth_manager.decode_access_token(token)
+        user_email = payload.get("sub")
+        await cache.set(user_email, None)
+        loggers["info"].info(f"User {user_email} Logout successfuly")
+        return {"message": "Logout successful"}
+
+    async def update_password(self, user: UserTableChangePassword, db_session):
+        authenticated_user = self.authenticate_user(
+            user.email, user.password, db_session
+        )
+        authenticated_user.password = self.password_manager.get_password_hash(
+            user.new_password
+        )
+        authenticated_user.last_password_change = datetime.now()
+        #db_session.commit()
+        #db_session.refresh(authenticated_user)
+        self.user_database_action.commit_changes(db_session)
+        self.user_database_action.refresh_item(authenticated_user, db_session)
+
+        stored_jit = await cache.get(user.email)
+        if stored_jit:
+            await cache.set(user.email, None)
+        loggers["info"].info(f"User {authenticated_user.email} changed their password")
+        return {"message": "Password successfully changed"}
+
+    def get_user_info(self, email):
+        print(email)
+        user = self.db.query(User).filter(User.email == email).first()
+        return user
+
 
 class UserManager:
     _instance = None
@@ -107,85 +138,28 @@ class UserManager:
             if self.worker.last_password_change_check(user):
                 return await self.auth_manager.create_tokens_for_user(user)
 
+    async def logout_user(self, token: str):
+        return await self.worker.invalid_token(token)
 
-"""
-
-
-
-async def invalid_token(self, token: str):
-    try:
-        payload = jwt.decode(
-            token, secret.SECRET_KEY, algorithms=[secret.ALGORITHM]
-        )
+    async def generate_new_access_token(self, refresh_token: str):
+        payload = self.auth_manager.decode_refresh_token(refresh_token)
         user_email = payload.get("sub")
         stored_jit = await cache.get(user_email)
-        if stored_jit:
-            await cache.set(user_email, None)
-            loggers["info"].info(f"User {user_email} Logout successfuly")
-            return {"message": "Logout successful"}
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired token",
-                headers={"WWW-Authenticate": "Bearer"},
+        if stored_jit is not None:
+            new_access_token = await self.auth_manager.create_access_token(
+                data={"sub": user_email}
             )
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials (access token)",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+            return {"access token": new_access_token}
+        return {"Login Required"}
 
-async def update_password(self, user: UserTableChangePassword):
-    authenticated_user = self.authenticate_user(user.email, user.password)
-    authenticated_user.password = self.password_manager.get_password_hash(
-        user.new_password
-    )
-    authenticated_user.last_password_change = datetime.now
-    self.commit_changes()
-    self.refresh_item(authenticated_user)
-    stored_jit = await cache.get(user.email)
-    if stored_jit:
-        await cache.set(user.email, None)
-    loggers["info"].info(f"User {authenticated_user.email} changed their password")
-    return {"message": "Password successfully changed"}
+    async def change_password(self, user: UserTableChangePassword, db_session):
+        return await self.worker.update_password(user, db_session)
 
-def get_user_info(self, email):
-    print(email)
-    user = self.db.query(User).filter(User.email == email).first()
-    return user
-"""
-
-"""
-
-
-
-async def logout_user(self, token: str):
-    return await self.worker.invalid_token(token)
-
-
-async def generate_new_access_token(self, refresh_token: str):
-    payload = self.auth_manager.decode_refresh_token(refresh_token)
-    user_email = payload.get("sub")
-    stored_jit = await cache.get(user_email)
-    if stored_jit is not None:
-        new_access_token = await self.auth_manager.create_access_token(
-            data={"sub": user_email}
-        )
-        return {"access token": new_access_token}
-    return {"Login Required"}
-
-
-async def change_password(self, user: UserTableChangePassword):
-    return await self.worker.update_password(user)
-
-
-async def find_user_info(
-    self,
-    token: str = Depends(oauth_2_schemes),
-):
-    print("here")
-    payload = await self.auth_manager.decode_access_token(token)
-    user = self.worker.get_user_info(payload.get("sub"))
-    return user
-"""
+    async def find_user_info(
+        self,
+        token: str = Depends(oauth_2_schemes),
+    ):
+        print("here")
+        payload = await self.auth_manager.decode_access_token(token)
+        user = self.worker.get_user_info(payload.get("sub"))
+        return user

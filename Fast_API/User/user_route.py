@@ -36,6 +36,15 @@ async def logout_user(
     return await user_manager.logout_user(token)
 
 
+@user_router.post("/change_password")
+async def change_password(
+    user: UserTableChangePassword,
+    db_session: Session = Depends(DatabaseManager().get_session),
+    user_manager: UserManager = Depends(UserManager),
+):
+    return await user_manager.change_password(user, db_session)
+
+
 @user_router.get("/token/check")
 async def token_check(token: str = Depends(oauth_2_schemes)):
     payload = await AuthManager().decode_access_token(token)
@@ -48,11 +57,3 @@ async def token_refresh(
     user_manager: UserManager = Depends(UserManager),
 ):
     return await user_manager.generate_new_access_token(token)
-
-
-@user_router.post("/change_password")
-async def change_password(
-    user: UserTableChangePassword,
-    user_manager: UserManager = Depends(UserManager),
-):
-    return await user_manager.change_password(user)

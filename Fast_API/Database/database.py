@@ -47,7 +47,6 @@ loggers["info"].info("Database setup completed.")
 class GeneralDatabaseAction:
 
     def add_item(self, item, db_session):
-        print(db_session)
         db_session.add(item)
 
     def commit_changes(self, db_session):
