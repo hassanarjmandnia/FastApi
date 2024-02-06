@@ -1,6 +1,5 @@
-from aiocache import caches, SimpleMemoryCache, RedisCache
-from redis import asyncio as aioredis
-from .settings import Settings
+from Fast_API.settings import Settings
+from aiocache import caches
 from .logger import loggers
 
 settings = Settings()

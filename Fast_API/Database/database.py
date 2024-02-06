@@ -1,8 +1,8 @@
 from sqlalchemy.orm import sessionmaker, scoped_session
+from Fast_API.utils.logger import loggers
 from Fast_API.settings import Settings
 from sqlalchemy import create_engine
-from Fast_API.logger import loggers
-from sqlalchemy.orm import Session
+
 
 setting = Settings()
 
@@ -27,8 +27,10 @@ class DatabaseManager:
         if not cls._instance:
             cls._instance = super(DatabaseManager, cls).__new__(cls)
             cls._instance.engine = engine
-            cls._instance.session_maker = sessionmaker(
-                autocommit=False, autoflush=False, bind=cls._instance.engine
+            cls._instance.session_maker = scoped_session(
+                sessionmaker(
+                    autocommit=False, autoflush=False, bind=cls._instance.engine
+                )
             )
         return cls._instance
 
@@ -37,7 +39,6 @@ class DatabaseManager:
         try:
             yield session
         finally:
-
             session.close()
 
 

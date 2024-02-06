@@ -1,6 +1,6 @@
-from fastapi import APIRouter
 from Fast_API.User.user_route import user_router
-from .note import note_router
+from Fast_API.note import note_router
+from fastapi import APIRouter
 from .logger import loggers
 
 router = APIRouter()

@@ -1,9 +1,9 @@
-from .settings import Settings
-from .Database.database import engine
-from fastapi import FastAPI
-from .Database.models import Base
-from .api import router
+from Fast_API.Database.database import engine
+from Fast_API.Database.models import Base
+from Fast_API.settings import Settings
 from .logger import loggers
+from fastapi import FastAPI
+from .api import router
 
 
 def create_app() -> FastAPI:

@@ -1,9 +1,8 @@
 from .user_schemas import UserTableCreate, UserTableLogin, UserTableChangePassword
-from Fast_API.Database.database import DatabaseManager
 from Fast_API.Auth.auth import oauth_2_schemes, AuthManager
+from Fast_API.Database.database import DatabaseManager
 from fastapi import APIRouter, Depends
 from .user_modules import UserManager
-from Fast_API.logger import loggers
 from sqlalchemy.orm import Session
 
 

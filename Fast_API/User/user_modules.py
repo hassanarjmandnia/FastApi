@@ -1,18 +1,14 @@
 from .user_schemas import UserTableCreate, UserTableLogin, UserTableChangePassword
 from Fast_API.Auth.auth import AuthManager, PasswordHashing, oauth_2_schemes
-from fastapi import Depends, HTTPException, status
-from Fast_API.validators import validate_unique_email
-from sqlalchemy.orm import Session
-from Fast_API.Database.models import User, Role
-from jose import JWTError, jwt
-from datetime import datetime
-from Fast_API.logger import loggers
-from Fast_API.Database.models import User
-from Fast_API.cache import cache
-from Fast_API import secret
+from Fast_API.utils.validators import validate_unique_email
 from Fast_API.Database.user_db import UserDatabaseAction
 from Fast_API.Database.role_db import RoleDatabaseAction
-
+from fastapi import Depends, HTTPException, status
+from Fast_API.Database.models import User, Role
+from Fast_API.utils.logger import loggers
+from Fast_API.utils.cache import cache
+from sqlalchemy.orm import Session
+from datetime import datetime
 
 PASSWORD_CHANGE_THRESHOLD = 60
 
@@ -92,8 +88,6 @@ class UserAction:
             user.new_password
         )
         authenticated_user.last_password_change = datetime.now()
-        #db_session.commit()
-        #db_session.refresh(authenticated_user)
         self.user_database_action.commit_changes(db_session)
         self.user_database_action.refresh_item(authenticated_user, db_session)
 

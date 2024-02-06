@@ -1,7 +1,7 @@
 from .schemas import NoteTableAdd
 from .Auth.auth import oauth_2_schemes, AuthManager
 from fastapi import APIRouter, Depends
-from .logger import loggers
+from .utils.logger import loggers
 from .User.user_route import UserManager
 
 note_router = APIRouter()

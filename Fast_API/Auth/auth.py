@@ -1,13 +1,14 @@
 from fastapi.security import OAuth2PasswordBearer
-from fastapi import HTTPException, status
-from passlib.context import CryptContext
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from Fast_API.logger import loggers
 from Fast_API.Database.models import User
-from Fast_API.cache import cache
+from fastapi import HTTPException, status
+from datetime import datetime, timedelta
+from passlib.context import CryptContext
+from Fast_API.utils.logger import loggers
+from Fast_API.utils.cache import cache
+from jose import JWTError, jwt
 from Fast_API import secret
 import secrets
+
 
 oauth_2_schemes = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -15,7 +16,6 @@ oauth_2_schemes = OAuth2PasswordBearer(tokenUrl="token")
 class PasswordHashing:
     def __init__(self):
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-        self.oauth_2_schemes = oauth_2_schemes
 
     def verify_password(self, plain_password, hashed_password):
         return self.pwd_context.verify(plain_password, hashed_password)
