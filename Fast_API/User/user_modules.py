@@ -97,9 +97,8 @@ class UserAction:
         loggers["info"].info(f"User {authenticated_user.email} changed their password")
         return {"message": "Password successfully changed"}
 
-    def get_user_info(self, email):
-        print(email)
-        user = self.db.query(User).filter(User.email == email).first()
+    def get_user_info(self, email, db_session):
+        user = self.user_database_action.get_user_by_email(email, db_session)
         return user
 
 
@@ -149,11 +148,7 @@ class UserManager:
     async def change_password(self, user: UserTableChangePassword, db_session):
         return await self.worker.update_password(user, db_session)
 
-    async def find_user_info(
-        self,
-        token: str = Depends(oauth_2_schemes),
-    ):
-        print("here")
+    async def find_user_info(self, token: str, db_session):
         payload = await self.auth_manager.decode_access_token(token)
-        user = self.worker.get_user_info(payload.get("sub"))
+        user = self.worker.get_user_info(payload.get("sub"), db_session)
         return user

@@ -1,5 +1,5 @@
 from Fast_API.User.user_route import user_router
-from Fast_API.note import note_router
+from Fast_API.Note.note_route import note_router
 from fastapi import APIRouter
 from .logger import loggers
 
