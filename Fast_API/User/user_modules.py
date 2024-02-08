@@ -1,14 +1,16 @@
 from .user_schemas import UserTableCreate, UserTableLogin, UserTableChangePassword
 from Fast_API.Auth.auth import AuthManager, PasswordHashing, oauth_2_schemes
 from Fast_API.utils.validators import validate_unique_email
+from fastapi import Depends, HTTPException, Request, status
 from Fast_API.Database.user_db import UserDatabaseAction
 from Fast_API.Database.role_db import RoleDatabaseAction
-from fastapi import Depends, HTTPException, status
+from Fast_API.Database.database import DatabaseManager
 from Fast_API.Database.models import User, Role
 from Fast_API.utils.logger import loggers
 from Fast_API.utils.cache import cache
 from sqlalchemy.orm import Session
 from datetime import datetime
+from typing import Optional
 
 PASSWORD_CHANGE_THRESHOLD = 60
 
@@ -145,10 +147,28 @@ class UserManager:
             return {"access token": new_access_token}
         return {"Login Required"}
 
-    async def change_password(self, user: UserTableChangePassword, db_session):
+    async def change_password(self, user: UserTableChangePassword, db_session: Session):
         return await self.worker.update_password(user, db_session)
 
-    async def find_user_info(self, token: str, db_session):
-        payload = await self.auth_manager.decode_access_token(token)
+    async def get_user_from_token(
+        self,
+        request: Request,
+        db_session: Session = Depends(DatabaseManager().get_session),
+    ):
+        token = request.headers.get("Authorization")
+        if token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        token_type, token_data = token.split()
+        if token_type.lower() != "bearer":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        payload = await self.auth_manager.decode_access_token(token_data)
         user = self.worker.get_user_info(payload.get("sub"), db_session)
         return user

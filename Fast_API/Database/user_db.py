@@ -1,6 +1,7 @@
 from .database import GeneralDatabaseAction
 from .models import User
 
+
 class UserDatabaseAction(GeneralDatabaseAction):
 
     def __init__(self):
