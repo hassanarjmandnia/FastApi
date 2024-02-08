@@ -75,7 +75,7 @@ class UserAction:
             )
         return True
 
-    async def invalid_token(self, token: str):
+    async def invalid_token(self, token):
         payload = await self.auth_manager.decode_access_token(token)
         user_email = payload.get("sub")
         await cache.set(user_email, None)
@@ -92,16 +92,44 @@ class UserAction:
         authenticated_user.last_password_change = datetime.now()
         self.user_database_action.commit_changes(db_session)
         self.user_database_action.refresh_item(authenticated_user, db_session)
-
         stored_jit = await cache.get(user.email)
         if stored_jit:
             await cache.set(user.email, None)
         loggers["info"].info(f"User {authenticated_user.email} changed their password")
         return {"message": "Password successfully changed"}
 
-    def get_user_info(self, email, db_session):
-        user = self.user_database_action.get_user_by_email(email, db_session)
-        return user
+    async def extract_token_from_request(self, request: Request):
+        token = request.headers.get("Authorization")
+        if token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        token_type, token_data = token.split()
+        if token_type.lower() != "bearer":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        # payload = await self.auth_manager.decode_access_token(token_data)
+        # user = self.user_database_action.get_user_by_email(
+        #    payload.get("sub"), db_session
+        # )
+        return token_data
+
+    async def create_new_access_token(self, request: Request):
+        refresh_token = await self.extract_token_from_request(request)
+        payload = self.auth_manager.decode_refresh_token(refresh_token)
+        user_email = payload.get("sub")
+        stored_jit = await cache.get(user_email)
+        if stored_jit is not None:
+            new_access_token = await self.auth_manager.create_access_token(
+                data={"sub": user_email}
+            )
+            return {"access token": new_access_token}
+        return {"Login Required"}
 
 
 class UserManager:
@@ -120,55 +148,36 @@ class UserManager:
                 cls._instance.user_database_action,
                 cls._instance.role_database_action,
             )
-
         return cls._instance
 
-    async def register_user(self, user: UserTableCreate, db_session: Session):
+    async def register_user(
+        self,
+        user: UserTableCreate,
+        db_session: Session = Depends(DatabaseManager().get_session),
+    ):
         user = self.worker.add_new_user(user, db_session)
         return await self.auth_manager.create_tokens_for_user(user)
 
-    async def login_user(self, user: UserTableLogin, db_session: Session):
+    async def login_user(
+        self,
+        user: UserTableLogin,
+        db_session: Session = Depends(DatabaseManager().get_session),
+    ):
         user = self.worker.authenticate_user(user.email, user.password, db_session)
         if self.worker.check_if_user_is_active(user):
             if self.worker.last_password_change_check(user):
                 return await self.auth_manager.create_tokens_for_user(user)
 
-    async def logout_user(self, token: str):
+    async def logout_user(self, request: Request):
+        token = await self.worker.extract_token_from_request(request)
         return await self.worker.invalid_token(token)
 
-    async def generate_new_access_token(self, refresh_token: str):
-        payload = self.auth_manager.decode_refresh_token(refresh_token)
-        user_email = payload.get("sub")
-        stored_jit = await cache.get(user_email)
-        if stored_jit is not None:
-            new_access_token = await self.auth_manager.create_access_token(
-                data={"sub": user_email}
-            )
-            return {"access token": new_access_token}
-        return {"Login Required"}
+    async def generate_new_access_token(self, request: Request):
+        return await self.worker.create_new_access_token(request)
 
-    async def change_password(self, user: UserTableChangePassword, db_session: Session):
-        return await self.worker.update_password(user, db_session)
-
-    async def get_user_from_token(
+    async def change_password(
         self,
-        request: Request,
+        user: UserTableChangePassword,
         db_session: Session = Depends(DatabaseManager().get_session),
     ):
-        token = request.headers.get("Authorization")
-        if token is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Missing token",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        token_type, token_data = token.split()
-        if token_type.lower() != "bearer":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        payload = await self.auth_manager.decode_access_token(token_data)
-        user = self.worker.get_user_info(payload.get("sub"), db_session)
-        return user
+        return await self.worker.update_password(user, db_session)
