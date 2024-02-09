@@ -1,9 +1,6 @@
-from .user_schemas import UserTableCreate, UserTableLogin, UserTableChangePassword
 from Fast_API.Auth.auth import oauth_2_schemes, AuthManager
-from Fast_API.Database.database import DatabaseManager
 from fastapi import APIRouter, Depends
 from .user_modules import UserManager
-from sqlalchemy.orm import Session
 
 
 user_router = APIRouter()
@@ -20,8 +17,11 @@ async def login_user(login_user: dict = Depends(UserManager().login_user)):
 
 
 @user_router.get("/logout")
-async def logout_user(logout_user: dict = Depends(UserManager().logout_user)):
-    return logout_user
+async def logout_user(
+    token: str = Depends(UserManager().get_token_from_request),
+    user_manager: UserManager = Depends(UserManager),
+):
+    return await user_manager.logout_user(token)
 
 
 @user_router.post("/change_password")
@@ -33,17 +33,10 @@ async def change_password(
 
 @user_router.get("/token/refresh")
 async def token_refresh(
-    generate_new_access_token: dict = Depends(UserManager().generate_new_access_token),
-):
-    return generate_new_access_token
-
-
-@user_router.get("/token/re654fresh")
-async def token_refresh(
-    token: str = Depends(oauth_2_schemes),
+    refresh_token: str = Depends(UserManager().get_token_from_request),
     user_manager: UserManager = Depends(UserManager),
 ):
-    return await user_manager.generate_new_access_token(token)
+    return await user_manager.generate_new_access_token(refresh_token)
 
 
 @user_router.get("/token/check")

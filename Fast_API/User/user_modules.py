@@ -10,7 +10,6 @@ from Fast_API.utils.logger import loggers
 from Fast_API.utils.cache import cache
 from sqlalchemy.orm import Session
 from datetime import datetime
-from typing import Optional
 
 PASSWORD_CHANGE_THRESHOLD = 60
 
@@ -113,14 +112,9 @@ class UserAction:
                 detail="Invalid token type",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        # payload = await self.auth_manager.decode_access_token(token_data)
-        # user = self.user_database_action.get_user_by_email(
-        #    payload.get("sub"), db_session
-        # )
         return token_data
 
-    async def create_new_access_token(self, request: Request):
-        refresh_token = await self.extract_token_from_request(request)
+    async def create_new_access_token(self, refresh_token):
         payload = self.auth_manager.decode_refresh_token(refresh_token)
         user_email = payload.get("sub")
         stored_jit = await cache.get(user_email)
@@ -130,6 +124,12 @@ class UserAction:
             )
             return {"access token": new_access_token}
         return {"Login Required"}
+
+    async def get_user_from_token(self, access_token, db_session):
+        payload = await self.auth_manager.decode_access_token(access_token)
+        user_email = payload.get("sub")
+        user = self.user_database_action.get_user_by_email(user_email, db_session)
+        return user
 
 
 class UserManager:
@@ -168,12 +168,11 @@ class UserManager:
             if self.worker.last_password_change_check(user):
                 return await self.auth_manager.create_tokens_for_user(user)
 
-    async def logout_user(self, request: Request):
-        token = await self.worker.extract_token_from_request(request)
+    async def logout_user(self, token: str):
         return await self.worker.invalid_token(token)
 
-    async def generate_new_access_token(self, request: Request):
-        return await self.worker.create_new_access_token(request)
+    async def generate_new_access_token(self, refresh_token):
+        return await self.worker.create_new_access_token(refresh_token)
 
     async def change_password(
         self,
@@ -181,3 +180,14 @@ class UserManager:
         db_session: Session = Depends(DatabaseManager().get_session),
     ):
         return await self.worker.update_password(user, db_session)
+
+    async def get_token_from_request(self, request: Request):
+        return await self.worker.extract_token_from_request(request)
+
+    async def get_current_user(
+        self,
+        request: Request,
+        db_session: Session = Depends(DatabaseManager().get_session),
+    ):
+        access_token = await self.get_token_from_request(request)
+        return await self.worker.get_user_from_token(access_token, db_session)
