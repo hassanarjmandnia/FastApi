@@ -30,7 +30,7 @@ class Note(Base):
     id = Column(Integer, primary_key=True)
     data = Column(String(10000))
     date = Column(DateTime(timezone=True), default=datetime.now())
-    user_id = Column(Integer, ForeignKey("user.id"))
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     likes = relationship(
         "Like", backref="note", lazy=True, cascade="all, delete-orphan"
     )

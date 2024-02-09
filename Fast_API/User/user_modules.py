@@ -30,7 +30,7 @@ class UserAction:
             password=self.password_manager.get_password_hash(user.password),
         )
         self.set_default_role(new_user, db_session)
-        self.user_database_action.add_user(new_user, db_session)
+        new_user = self.user_database_action.add_user(new_user, db_session)
         loggers["info"].info(f"New user {new_user.email} add to databse")
         return new_user
 
