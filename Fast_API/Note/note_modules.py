@@ -36,6 +36,27 @@ class NoteAction:
         loggers["info"].info(f"user {user.email} add a note to databse!")
         return new_note
 
+    async def update_note(
+        self, user, note_id: int, body_of_note: NoteTableAdd, db_session: Session
+    ):
+        note = self.note_database_action.get_note_by_id(note_id, db_session)
+        if note:
+            if note.user_id == user.id:
+                note.data = body_of_note.data
+                self.note_database_action.commit_changes(db_session)
+                self.note_database_action.refresh_item(note, db_session)
+                return note
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You are not authorized to update this note.",
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Sorry, the note you're looking for does not exist. Please double-check the note ID and try again.",
+            )
+
 
 class NoteManager:
     _instance = None
@@ -47,13 +68,18 @@ class NoteManager:
             cls._instance.worker = NoteAction(cls._instance.note_database_action)
         return cls._instance
 
-    async def add_note(
-        self, body_of_note: NoteTableAdd, user: User, db_session: Session
-    ):
-        return await self.worker.add_note(body_of_note, user, db_session)
-
     async def show_notes(self, db_session: Session):
         return await self.worker.show_notes(db_session)
 
     async def show_note(self, note_id: int, db_session: Session):
         return await self.worker.show_note(note_id, db_session)
+
+    async def add_note(
+        self, body_of_note: NoteTableAdd, user: User, db_session: Session
+    ):
+        return await self.worker.add_note(body_of_note, user, db_session)
+
+    async def update_note(
+        self, user: User, note_id: int, body_of_note: NoteTableAdd, db_session: Session
+    ):
+        return await self.worker.update_note(user, note_id, body_of_note, db_session)
