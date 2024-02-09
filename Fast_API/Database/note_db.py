@@ -19,3 +19,7 @@ class NoteDatabaseAction(GeneralDatabaseAction):
         self.commit_changes(db_session)
         self.refresh_item(note, db_session)
         return note
+
+    def delete_note(self, note, db_session):
+        self.delete_item(note, db_session)
+        self.commit_changes(db_session)

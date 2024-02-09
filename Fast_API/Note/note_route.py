@@ -52,6 +52,11 @@ async def update_note(
     )
 
 
-@note_router.delete("/delete_note/{note_id}")
-def delete_note(note_id: int):
-    return {"Hello world from note.py -> Delete note": note_id}
+@note_router.delete("/delete/{note_id}")
+async def delete_note(
+    note_id: int,
+    current_user: User = Depends(UserManager().get_current_user),
+    db_session: Session = Depends(DatabaseManager().get_session),
+    note_manager: NoteManager = Depends(NoteManager),
+):
+    return await note_manager.delete_note(current_user, note_id, db_session)

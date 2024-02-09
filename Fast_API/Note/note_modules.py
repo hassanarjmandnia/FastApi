@@ -57,6 +57,23 @@ class NoteAction:
                 detail="Sorry, the note you're looking for does not exist. Please double-check the note ID and try again.",
             )
 
+    async def delete_note(self, user: User, note_id: int, db_session: Session):
+        note = self.note_database_action.get_note_by_id(note_id, db_session)
+        if note:
+            if note.user_id == user.id:
+                self.note_database_action.delete_note(note, db_session)
+                return {"message": "Item deleted successfully"}
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You are not authorized to delete this note.",
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Sorry, the note you're looking for does not exist. Please double-check the note ID and try again.",
+            )
+
 
 class NoteManager:
     _instance = None
@@ -83,3 +100,6 @@ class NoteManager:
         self, user: User, note_id: int, body_of_note: NoteTableAdd, db_session: Session
     ):
         return await self.worker.update_note(user, note_id, body_of_note, db_session)
+
+    async def delete_note(self, user: User, note_id: int, db_session: Session):
+        return await self.worker.delete_note(user, note_id, db_session)
