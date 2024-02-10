@@ -45,6 +45,9 @@ class NoteAction:
                 note.data = body_of_note.data
                 self.note_database_action.commit_changes(db_session)
                 self.note_database_action.refresh_item(note, db_session)
+                loggers["info"].info(
+                    f"user {user.email} update note with id {note_id}!"
+                )
                 return note
             else:
                 raise HTTPException(
@@ -62,6 +65,9 @@ class NoteAction:
         if note:
             if note.user_id == user.id:
                 self.note_database_action.delete_note(note, db_session)
+                loggers["info"].info(
+                    f"user {user.email} Delete note with id {note_id}!"
+                )
                 return {"message": "Item deleted successfully"}
             else:
                 raise HTTPException(
