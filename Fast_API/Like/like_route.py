@@ -4,6 +4,7 @@ from Fast_API.Database.models import User
 from fastapi import APIRouter, Depends
 from .like_modules import LikeManager
 from sqlalchemy.orm import Session
+from typing import Union
 
 like_router = APIRouter()
 
@@ -26,6 +27,7 @@ async def likers_of_note(
     like_manager: LikeManager = Depends(LikeManager),
 ):
     return await like_manager.likers_of_note(note_id, db_session)
+
 
 @like_router.get("/likes")
 async def likes_of_user(

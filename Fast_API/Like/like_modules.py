@@ -26,9 +26,7 @@ class LikeAction:
 
     async def likers_of_note(self, note_id: int, db_session: Session):
         likes = self.like_database_action.get_all_likes_of_a_note(note_id, db_session)
-        users_who_liked_note = [
-            (like.user.first_name, like.user.last_name) for like in likes
-        ]
+        users_who_liked_note = [(like.user) for like in likes]
         return users_who_liked_note
 
     async def likes_of_user(self, user: User, db_session: Session):
