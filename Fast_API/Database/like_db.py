@@ -23,3 +23,9 @@ class LikeDatabaseAction(GeneralDatabaseAction):
             .filter(Like.user_id == user_id, Like.note_id == note_id)
             .first()
         )
+
+    def get_all_likes_of_a_note(self, note_id, db_session):
+        return db_session.query(Like).filter(Like.note_id == note_id).all()
+
+    def get_all_likes_from_a_user(self, user_id, db_session):
+        return db_session.query(Like).filter(Like.user_id == user_id).all()

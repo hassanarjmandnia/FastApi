@@ -24,6 +24,18 @@ class LikeAction:
             status_code = 200
             return JSONResponse(content={"message": message}, status_code=status_code)
 
+    async def likers_of_note(self, note_id: int, db_session: Session):
+        likes = self.like_database_action.get_all_likes_of_a_note(note_id, db_session)
+        users_who_liked_note = [
+            (like.user.first_name, like.user.last_name) for like in likes
+        ]
+        return users_who_liked_note
+
+    async def likes_of_user(self, user: User, db_session: Session):
+        likes = self.like_database_action.get_all_likes_from_a_user(user.id, db_session)
+        notes_liked_by_user = [like.note for like in likes]
+        return notes_liked_by_user
+
 
 class LikeManager:
     _instance = None
@@ -37,3 +49,9 @@ class LikeManager:
 
     async def like_unlike_note(self, note_id: int, user: User, db_session: Session):
         return await self.worker.like_unlike_note(note_id, user, db_session)
+
+    async def likers_of_note(self, note_id: int, db_session: Session):
+        return await self.worker.likers_of_note(note_id, db_session)
+
+    async def likes_of_user(self, user: User, db_session: Session):
+        return await self.worker.likes_of_user(user, db_session)
