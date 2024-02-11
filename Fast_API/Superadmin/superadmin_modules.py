@@ -1,4 +1,4 @@
-from .superadmin_schemas import RoleTableAdd, UserRoleUpdate
+from .superadmin_schemas import RoleTableAdd, UserRoleUpdate, UserStatusUpdate
 from Fast_API.Database.role_db import RoleDatabaseAction
 from Fast_API.Database.user_db import UserDatabaseAction
 from fastapi.responses import JSONResponse
@@ -46,6 +46,20 @@ class SuperAdminAction:
         self.user_database_action.refresh_item(user, db_session)
         return user
 
+    def change_status_of_user(self, status_change, db_session):
+        user = self.user_database_action.get_user_by_id(
+            status_change.user_id, db_session
+        )
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User with this id don't exist!",
+            )
+        user.is_active = status_change.new_status
+        self.user_database_action.commit_changes(db_session)
+        self.user_database_action.refresh_item(user, db_session)
+        return user
+
 
 class SuperAdminManager:
     _instance = None
@@ -65,3 +79,8 @@ class SuperAdminManager:
 
     def change_role_of_user(self, role_change: UserRoleUpdate, db_session: Session):
         return self.worker.change_role_of_user(role_change, db_session)
+
+    def change_status_of_user(
+        self, status_change: UserStatusUpdate, db_session: Session
+    ):
+        return self.worker.change_status_of_user(status_change, db_session)

@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field
-from datetime import datetime
 
 
 class RoleTableAdd(BaseModel):
@@ -9,3 +8,8 @@ class RoleTableAdd(BaseModel):
 class UserRoleUpdate(BaseModel):
     name: str = Field(..., min_length=4)
     user_id: int = Field(...)
+
+
+class UserStatusUpdate(BaseModel):
+    user_id: int = Field(...)
+    new_status: bool = Field(...)
