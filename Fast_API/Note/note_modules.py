@@ -2,8 +2,9 @@ from Fast_API.Database.note_db import NoteDatabaseAction
 from Fast_API.Note.note_schemas import NoteTableAdd
 from Fast_API.Database.models import User, Note
 from Fast_API.utils.logger import loggers
-from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+
 
 
 class NoteAction:

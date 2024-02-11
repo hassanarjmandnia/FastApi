@@ -131,6 +131,15 @@ class UserAction:
         user = self.user_database_action.get_user_by_email(user_email, db_session)
         return user
 
+    def check_role_of_user(self, role_id, role, db_session):
+        if self.role_database_action.find_role_name(role_id, db_session) == role:
+            return True
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not a SuperAdmin",
+            )
+
 
 class UserManager:
     _instance = None
@@ -191,3 +200,12 @@ class UserManager:
     ):
         access_token = await self.get_token_from_request(request)
         return await self.worker.get_user_from_token(access_token, db_session)
+
+    async def authenticate_and_verify_super_admin(
+        self,
+        request: Request,
+        db_session: Session = Depends(DatabaseManager().get_session),
+    ):
+        user = await self.get_current_user(request, db_session)
+        if self.worker.check_role_of_user(user.role_id, "superadmin", db_session):
+            return user

@@ -15,3 +15,10 @@ class RoleDatabaseAction(GeneralDatabaseAction):
         self.commit_changes(db_session)
         self.refresh_item(role, db_session)
         return role
+
+    def find_role_name(self, role_id, db_session):
+        role = db_session.query(Role).filter(Role.id == role_id).first()
+        if role:
+            return role.name
+        else:
+            return "Unknown Role"

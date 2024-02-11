@@ -1,6 +1,9 @@
 from Fast_API.Auth.auth import oauth_2_schemes, AuthManager
+from Fast_API.Database.database import DatabaseManager
+from Fast_API.Database.models import User
 from fastapi import APIRouter, Depends
 from .user_modules import UserManager
+from sqlalchemy.orm import Session
 
 
 user_router = APIRouter()
