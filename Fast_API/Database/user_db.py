@@ -18,3 +18,7 @@ class UserDatabaseAction(GeneralDatabaseAction):
         self.commit_changes(db_session)
         self.refresh_item(user, db_session)
         return user
+
+    def delete_user(self, user, db_session):
+        self.delete_item(user, db_session)
+        self.commit_changes(db_session)

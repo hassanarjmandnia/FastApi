@@ -38,3 +38,13 @@ async def change_user_status(
     super_admin_manager: SuperAdminManager = Depends(SuperAdminManager),
 ):
     return super_admin_manager.change_status_of_user(status_change, db_session)
+
+
+@superadmin_router.delete("/delete_user/{user_id}")
+async def delete_user(
+    user_id: int,
+    superadmin_user: User = Depends(UserManager().authenticate_and_verify_super_admin),
+    db_session: Session = Depends(DatabaseManager().get_session),
+    super_admin_manager: SuperAdminManager = Depends(SuperAdminManager),
+):
+    return super_admin_manager.delete_user(user_id, db_session)

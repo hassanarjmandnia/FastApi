@@ -60,6 +60,20 @@ class SuperAdminAction:
         self.user_database_action.refresh_item(user, db_session)
         return user
 
+    def delete_user(self, user_id, db_session):
+        user = self.user_database_action.get_user_by_id(user_id, db_session)
+        if user:
+            self.user_database_action.delete_user(user, db_session)
+            message = "User deleted successfully"
+            status_code = 200
+            return JSONResponse(content={"message": message}, status_code=status_code)
+
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Sorry, the note you're looking for does not exist. Please double-check the note ID and try again.",
+            )
+
 
 class SuperAdminManager:
     _instance = None
@@ -84,3 +98,6 @@ class SuperAdminManager:
         self, status_change: UserStatusUpdate, db_session: Session
     ):
         return self.worker.change_status_of_user(status_change, db_session)
+
+    def delete_user(self, user_id: int, db_session: Session):
+        return self.worker.delete_user(user_id, db_session)
