@@ -7,6 +7,9 @@ class RoleDatabaseAction(GeneralDatabaseAction):
     def __init__(self):
         super().__init__()
 
+    def get_role_by_id(self, role_id, db_session):
+        return db_session.query(Role).get(role_id)
+
     def get_role_by_name(self, role_name, db_session):
         return db_session.query(Role).filter(Role.name == role_name).first()
 
@@ -22,3 +25,7 @@ class RoleDatabaseAction(GeneralDatabaseAction):
             return role.name
         else:
             return "Unknown Role"
+
+    def delete_role(self, role, db_session):
+        self.delete_item(role, db_session)
+        self.commit_changes(db_session)

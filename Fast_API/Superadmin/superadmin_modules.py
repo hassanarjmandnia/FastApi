@@ -1,10 +1,11 @@
 from .superadmin_schemas import RoleTableAdd, UserRoleUpdate, UserStatusUpdate
 from Fast_API.Database.role_db import RoleDatabaseAction
 from Fast_API.Database.user_db import UserDatabaseAction
+from Fast_API.Database.models import Role, User
 from fastapi.responses import JSONResponse
-from Fast_API.Database.models import Role
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import update
 
 
 class SuperAdminAction:
@@ -71,7 +72,38 @@ class SuperAdminAction:
         else:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Sorry, the note you're looking for does not exist. Please double-check the note ID and try again.",
+                detail="Sorry, the User you're looking for does not exist.",
+            )
+
+    def delete_role(self, role_id, db_session):
+        role = self.role_database_action.get_role_by_id(role_id, db_session)
+        if role:
+            if role.name == "user":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="nah, don't even think about it!",
+                )
+            else:
+                default_role = self.role_database_action.get_role_by_name(
+                    "user", db_session
+                )
+                if not default_role:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Role with this name don't exist",
+                    )
+                self.user_database_action.update_users_role_to_default(
+                    db_session, default_role.id, role_id
+                )
+                message = "Role deleted successfully"
+                status_code = 200
+                return JSONResponse(
+                    content={"message": message}, status_code=status_code
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Sorry, the Role you're looking for does not exist.",
             )
 
 
@@ -101,3 +133,6 @@ class SuperAdminManager:
 
     def delete_user(self, user_id: int, db_session: Session):
         return self.worker.delete_user(user_id, db_session)
+
+    def delete_role(self, role_id: int, db_session: Session):
+        return self.worker.delete_role(role_id, db_session)

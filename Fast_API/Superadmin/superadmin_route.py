@@ -48,3 +48,12 @@ async def delete_user(
     super_admin_manager: SuperAdminManager = Depends(SuperAdminManager),
 ):
     return super_admin_manager.delete_user(user_id, db_session)
+
+@superadmin_router.delete("/delete_role/{role_id}")
+async def delete_role(
+    role_id: int,
+    superadmin_user: User = Depends(UserManager().authenticate_and_verify_super_admin),
+    db_session: Session = Depends(DatabaseManager().get_session),
+    super_admin_manager: SuperAdminManager = Depends(SuperAdminManager),
+):
+    return super_admin_manager.delete_role(role_id, db_session)
