@@ -95,6 +95,7 @@ class SuperAdminAction:
                 self.user_database_action.update_users_role_to_default(
                     db_session, default_role.id, role_id
                 )
+                self.role_database_action.delete_role(role, db_session)
                 message = "Role deleted successfully"
                 status_code = 200
                 return JSONResponse(
