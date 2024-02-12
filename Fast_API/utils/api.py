@@ -1,4 +1,5 @@
 from Fast_API.Superadmin.superadmin_route import superadmin_router
+from Fast_API.UploadFile.uploadfile_route import uploadfile_router
 from Fast_API.User.user_route import user_router
 from Fast_API.Note.note_route import note_router
 from Fast_API.Like.like_route import like_router
@@ -11,5 +12,6 @@ router.include_router(user_router, prefix="/User", tags=["User"])
 router.include_router(note_router, prefix="/Note", tags=["Note"])
 router.include_router(like_router, prefix="/Like", tags=["Like"])
 router.include_router(superadmin_router, prefix="/Superadmin", tags=["Superadmin"])
+router.include_router(uploadfile_router, prefix="/Uploadfile", tags=["Uploadfile"])
 
 loggers["info"].info("API router configured successfully.")
