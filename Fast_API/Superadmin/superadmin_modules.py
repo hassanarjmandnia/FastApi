@@ -1,8 +1,8 @@
 from .superadmin_schemas import RoleTableAdd, UserRoleUpdate, UserStatusUpdate
 from Fast_API.Database.role_db import RoleDatabaseAction
 from Fast_API.Database.user_db import UserDatabaseAction
-from Fast_API.Database.models import Role, User
 from fastapi.responses import JSONResponse
+from Fast_API.Database.models import Role
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import update
