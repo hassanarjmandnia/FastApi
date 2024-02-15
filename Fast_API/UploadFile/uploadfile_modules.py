@@ -1,5 +1,7 @@
 from fastapi import File, HTTPException, UploadFile, status
+import concurrent.futures
 from typing import List
+import threading
 import zipfile
 import shutil
 import json
@@ -80,6 +82,29 @@ class UploadFileAction:
         with open(new_file_path, "w", encoding="utf-8") as new_file:
             json.dump(data, new_file, ensure_ascii=False, indent=4)
 
+    def process_single_file(self, file_path):
+        thread_name = threading.current_thread().name
+        print(f"Processing file {file_path} in thread {thread_name}")
+        file_name = os.path.basename(file_path)
+        with open(file_path, "r", encoding="utf-8") as file:
+            decoder = json.JSONDecoder()
+            data = decoder.decode(file.read())
+        self.worker_1(data, file_name, file_path)
+        return "ok"
+
+    async def concurrent_process_file(self, file_paths):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(self.process_single_file, file_path)
+                for file_path in file_paths
+            ]
+
+            results = [
+                future.result() for future in concurrent.futures.as_completed(futures)
+            ]
+
+        return results
+
     async def process_file(self, file_paths):
         for file_path in file_paths:
             file_name = os.path.basename(file_path)
@@ -102,3 +127,9 @@ class UploadFileManager:
     async def process_uploaded_files(self, files: list[UploadFile] = File(...)):
         file_paths = await self.worker.get_path_of_files(files)
         return await self.worker.process_file(file_paths)
+
+    async def concurrent_process_uploaded_files(
+        self, files: list[UploadFile] = File(...)
+    ):
+        file_paths = await self.worker.get_path_of_files(files)
+        return await self.worker.concurrent_process_file(file_paths)
