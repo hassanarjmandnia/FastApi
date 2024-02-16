@@ -1,6 +1,10 @@
-from fastapi import File, HTTPException, UploadFile, status
+from fastapi import File, HTTPException, Response, UploadFile, status
+from Fast_API.Database.database import get_mongo_database
+from bson.errors import InvalidId
+from typing import List, Dict
 import concurrent.futures
-from typing import List
+from gridfs import GridFS
+from bson import ObjectId
 import zipfile
 import shutil
 import json
@@ -13,7 +17,8 @@ ALLOWED_EXTENSIONS = {"txt", "zip", "json"}
 
 class UploadFileAction:
     def __init__(self):
-        pass
+        self.db = get_mongo_database("processed_files")
+        self.fs = GridFS(self.db)
 
     def allowed_file(self, filename: str) -> bool:
         return (
@@ -57,13 +62,14 @@ class UploadFileAction:
                 path.extend(extracted_txt_files)
         return path
 
-    def worker_1(self, data, file_name, file_path):
+    def worker_1(self, data, file_path):
         for item in data:
             tweet_info = item.get("_", {})
             tweet_type = tweet_info.get("type", "")
             if tweet_type == "tweet":
                 item = self.worker_2(item)
-        self.worker_3(data, file_name, file_path)
+        # self.worker_3(data, file_path)
+        self.worker_4(data, file_path)
 
     def worker_2(self, item):
         text_content = item.get("text", "")
@@ -71,7 +77,8 @@ class UploadFileAction:
         item["_"]["hashtags"] = hashtags
         return item
 
-    def worker_3(self, data, file_name, file_path):
+    def worker_3(self, data, file_path):
+        file_name = os.path.basename(file_path)
         original_dir = os.path.dirname(file_path)
         new_folder_path = os.path.join(original_dir, "new")
         os.makedirs(new_folder_path, exist_ok=True)
@@ -80,6 +87,12 @@ class UploadFileAction:
         )
         with open(new_file_path, "w", encoding="utf-8") as new_file:
             json.dump(data, new_file, ensure_ascii=False, indent=4)
+
+    def worker_4(self, data, file_path):
+        file_name = os.path.basename(file_path)
+        encoded_data = json.dumps(data).encode("utf-8")
+        file_id = self.fs.put(encoded_data, filename=file_name)
+        return file_id
 
     def process_single_file(self, file_path):
         file_name = os.path.basename(file_path)
@@ -104,12 +117,65 @@ class UploadFileAction:
 
     async def process_file(self, file_paths):
         for file_path in file_paths:
-            file_name = os.path.basename(file_path)
             with open(file_path, "r", encoding="utf-8") as file:
                 decoder = json.JSONDecoder()
                 data = decoder.decode(file.read())
-            self.worker_1(data, file_name, file_path)
+            self.worker_1(data, file_path)
         return "ok"
+
+    def get_list_of_files(self):
+        files = []
+        for file in self.fs.find():
+            files.append({"id": str(file._id), "name": file.filename})
+        return files
+
+    def get_file_by_id(self, file_id: str) -> List[Dict]:
+        try:
+            file_object = self.fs.get(ObjectId(file_id))
+            if file_object:
+                file_content = json.loads(file_object.read().decode("utf-8"))
+                reduced_content = []
+                for item in file_content:
+                    reduced_item = {
+                        "_": item["_"],
+                        "update_time": item.get("update_time", ""),
+                        "id": item.get("id", ""),
+                        "created_at": item.get("created_at", ""),
+                        "text": item.get("text", ""),
+                        "full_text": item.get("full_text", ""),
+                    }
+                    reduced_content.append(reduced_item)
+                return reduced_content
+            else:
+                raise HTTPException(status_code=404, detail="File not found")
+        except InvalidId:
+            raise HTTPException(status_code=400, detail="Invalid ObjectId")
+
+    def update_items_of_file(self, file_id: str, updated_data: dict):
+        try:
+            try:
+                file_object = self.fs.get(ObjectId(file_id))
+                file_content = json.loads(file_object.read().decode("utf-8"))
+                for item in file_content:
+                    if item.get("id") == updated_data.get("id"):
+                        for key, value in updated_data.items():
+                            if key != "id":
+                                item[key] = value
+                        encoded_data = json.dumps(file_content).encode("utf-8")
+                        self.fs.delete(ObjectId(file_id))
+                        self.fs.put(
+                            encoded_data,
+                            filename=file_object.filename,
+                            content_type=file_object.content_type,
+                            _id=file_object._id,
+                        )
+                        return {"message": "File updated successfully"}
+                    else:
+                        return {"message": "This file don't have a item with this id"}
+            except Exception as e:
+                raise HTTPException(status_code=404, detail="File not found")
+        except InvalidId:
+            raise HTTPException(status_code=400, detail="Invalid ObjectId")
 
 
 class UploadFileManager:
@@ -130,3 +196,12 @@ class UploadFileManager:
     ):
         file_paths = await self.worker.get_path_of_files(files)
         return await self.worker.concurrent_process_file(file_paths)
+
+    def get_list_of_files(self):
+        return self.worker.get_list_of_files()
+
+    def get_file_by_id(self, file_id: str):
+        return self.worker.get_file_by_id(file_id)
+
+    def update_items_of_file(self, file_id: str, updated_data: dict):
+        return self.worker.update_items_of_file(file_id, updated_data)
