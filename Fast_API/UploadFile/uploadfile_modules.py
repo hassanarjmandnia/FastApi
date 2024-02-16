@@ -1,7 +1,6 @@
 from fastapi import File, HTTPException, UploadFile, status
 import concurrent.futures
 from typing import List
-import threading
 import zipfile
 import shutil
 import json
@@ -83,8 +82,6 @@ class UploadFileAction:
             json.dump(data, new_file, ensure_ascii=False, indent=4)
 
     def process_single_file(self, file_path):
-        thread_name = threading.current_thread().name
-        print(f"Processing file {file_path} in thread {thread_name}")
         file_name = os.path.basename(file_path)
         with open(file_path, "r", encoding="utf-8") as file:
             decoder = json.JSONDecoder()

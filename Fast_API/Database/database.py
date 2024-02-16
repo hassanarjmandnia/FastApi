@@ -2,7 +2,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from Fast_API.utils.logger import loggers
 from Fast_API.settings import Settings
 from sqlalchemy import create_engine
-
+from pymongo import MongoClient
 
 setting = Settings()
 
@@ -58,3 +58,8 @@ class GeneralDatabaseAction:
 
     def refresh_item(self, item, db_session):
         db_session.refresh(item)
+
+
+def get_mongo_database(db_name: str):
+    client = MongoClient("mongodb://localhost")
+    return client[db_name]
