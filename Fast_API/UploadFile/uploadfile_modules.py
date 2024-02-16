@@ -1,4 +1,4 @@
-from fastapi import File, HTTPException, Response, UploadFile, status
+from fastapi import File, HTTPException, UploadFile, status
 from Fast_API.Database.database import get_mongo_database
 from bson.errors import InvalidId
 from typing import List, Dict
@@ -99,7 +99,7 @@ class UploadFileAction:
         with open(file_path, "r", encoding="utf-8") as file:
             decoder = json.JSONDecoder()
             data = decoder.decode(file.read())
-        self.worker_1(data, file_name, file_path)
+        self.worker_1(data, file_path)
         return "ok"
 
     async def concurrent_process_file(self, file_paths):
